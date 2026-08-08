@@ -1,5 +1,10 @@
 # sky-islands-analysis
 
+This repo describes the code use for the analysis used in the paper ####
+
+Apologize in advance if the code is not polished, but I will try polsih it little by little with time. It should still run anyways and you should be able to reproduce the analyses from the beginning (FASTQ files) to the end figures and stats. 
+
+
 ## Bioinformatics
 <img width="3240" height="2167" alt="block1" src="https://github.com/user-attachments/assets/29370f6b-721f-4da7-a692-461948ce24a4" />
 
