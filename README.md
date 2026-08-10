@@ -20,7 +20,18 @@ This code must be run on an HPC cluster, as it is very computationally demanding
 
 4) tree_construction_no_fastest.slurm is the code used for alignment, gap removal and tree construction.
 
-5) tree_nodes_division.R organizes the tree in different nodes, roots the tree using Archaea and calculates which nodes to use for codiversification analysis (distal 1/4 of the tree) 
+5) tree_nodes_division.R organizes the tree in different nodes, roots the tree using Archaea and calculates which nodes to use for codiversification analysis (select for nodes in the 1/4 of the tree closer to the tips)
+
+## Alpha/beta Statistics
+
+The following up code is code where more common alpha and beta diversit analysis are performed. Followed by a code for plotting strain sharing and a then the codes for modelling strain with BRMS.
+
+## Codiversification
+
+The last block is codiversification. 
+
+
+
 
 
 
