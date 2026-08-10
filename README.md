@@ -32,6 +32,14 @@ There are four codes.
 3) strain_sharing_and_co_phylogeny.R strain sharing between species visualization 
 4) modelling of ASV species occupancy
 
+## BRMS model
+<img width="3396" height="1851" alt="Picture1" src="https://github.com/user-attachments/assets/879f0e69-679f-4777-8995-93f734a36df8" />
+
+This is the code to run BRMS model. 
+1) The first step is to generate the metadata
+2) then run the models in the HPC. Bewareyou will also need probably a slurm script, very simple for running the three models in the HPC/
+3) THe last code is to analyze the model results 
+
 ## Codiversification
 
 The last block is codiversification. 
