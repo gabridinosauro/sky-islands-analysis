@@ -23,8 +23,14 @@ This code must be run on an HPC cluster, as it is very computationally demanding
 5) tree_nodes_division.R organizes the tree in different nodes, roots the tree using Archaea and calculates which nodes to use for codiversification analysis (select for nodes in the 1/4 of the tree closer to the tips)
 
 ## Alpha/beta Statistics
+<img width="3190" height="2374" alt="Picture1" src="https://github.com/user-attachments/assets/c90f15b6-ce9d-4a57-a504-9300622c07ab" />
 
-The following up code is code where more common alpha and beta diversit analysis are performed. Followed by a code for plotting strain sharing and a then the codes for modelling strain with BRMS.
+The following up code is code where more common alpha and beta diversit analysis are performed. 
+There are four codes. 
+1) alpha_beta_diversity.R calculates basic alpha and beta diversity stats and visualizations
+2) boxplots_same_species_same_mountain.R boxplots of visualizations of differences in strain sharing rates between same species and same mountains.
+3) strain_sharing_and_co_phylogeny.R strain sharing between species visualization 
+4) modelling of ASV species occupancy
 
 ## Codiversification
 
