@@ -43,7 +43,16 @@ This is the code to run BRMS model.
 ## Codiversification
 
 The last block is codiversification. 
+<img width="2970" height="2617" alt="Picture1" src="https://github.com/user-attachments/assets/4ad657c3-b966-4dab-96a0-8b577bc7cee2" />
 
+01_mantel_computation.R — Mantel test (host vs. microbial phylogenetic distance) for every node subtree; the heavy HPC step.
+02_node_filtering_taxonomy.R — removes redundant nodes, FDR-corrects p-values, annotates taxonomy, flags dominant ASVs.
+03_tree_visualization.R — cophylogeny plot and circular cladogram colored by Mantel's r.
+04_trait_association_summary.R — codiversification by family/phylum, linked to GTDB life-history traits.
+05_mantel_by_mountain.R — re-runs Mantel tests within each mountain range separately.
+06_trait_permutation_tests.R — permutation tests for trait enrichment among codiversifying taxa.
+07_codiversification_strength_abundance.R — categorizes ASVs by codiversification strength; compares abundance and occupancy.
+08_genus_trait_species_occupancy.R — models host-species occupancy as a function of genus-level microbial traits and codiversification signal.
 
 
 
