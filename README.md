@@ -22,6 +22,16 @@ This code must be run on an HPC cluster, as it is very computationally demanding
 
 5) tree_nodes_division.R organizes the tree in different nodes, roots the tree using Archaea and calculates which nodes to use for codiversification analysis (select for nodes in the 1/4 of the tree closer to the tips)
 
+## Miscellaneous codes
+<img width="2864" height="1443" alt="Picture1" src="https://github.com/user-attachments/assets/c59f8122-9711-4d14-8481-1a70a0fcd717" />
+These codes calculate various things needed for further analysis
+
+1) calculate NDVi values. This code download and average NDVI values
+2) tree_pruning_mammals.R This code download and trims host tree
+3) this code assign traits to our ASVs
+
+
+
 ## Alpha/beta Statistics
 <img width="3190" height="2374" alt="Picture1" src="https://github.com/user-attachments/assets/c90f15b6-ce9d-4a57-a504-9300622c07ab" />
 
