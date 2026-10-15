@@ -3,19 +3,20 @@
 library(vegan)
 library(ecodist)
 library(ape)
-library(phytools)
 library(reshape2)
 library(stringr)
 library(pvclust)
 library(ggplot2)
 library(ggpubr)
 library(viridis)
+library(geomorph)
+library(phytools)
 library(cultevo)
 source("~/Library/CloudStorage/OneDrive-UniversityofArizona/helpful_r_functions.R")
 
 setwd("/Users/gabri/Library/CloudStorage/OneDrive-UniversityofArizona/mice/Suzuki_meeting_presentation/")
 bac.dist.sor = readRDS("bac.dist_sor.RDS")
-metadata = readRDS("metadata_clean_1.RDS")
+metadata = readRDS("/Users/gabri/Documents/final_codes_sky_islands/data/metadata_clean_1.RDS")
 ASVtable = readRDS("ASVtable.RDS")
 Taxatable= readRDS("Taxtab.RDS")
 
@@ -238,6 +239,148 @@ ggplot(df, aes(x = phy, y = micro)) +
     x = "Phylogenetic distance",
     y = "Microbiome distance"
   )
+
+
+
+
+# Add diet ----------------
+### Mantel test ----------------------------------------------------------
+diet_elt <- read.csv("/Users/gabri/Documents/final_codes_sky_islands/data/diet_elton.csv")
+phyl_mat = phy_mat1
+
+
+
+# 1. Phylogenetic distance matrix from tree, rename to match diet_elt format
+rownames(phyl_mat) <- gsub("_", " ", rownames(phyl_mat))
+colnames(phyl_mat) <- gsub("_", " ", colnames(phyl_mat))
+rownames(phyl_mat)[rownames(phyl_mat) == "Tamias dorsalis"] <- "Neotamias dorsalis"
+colnames(phyl_mat)[colnames(phyl_mat) == "Tamias dorsalis"] <- "Neotamias dorsalis"
+
+# 2. Diet distance matrix
+diet_mat <- as.matrix(diet_elt[, grep("^Diet\\.", colnames(diet_elt))])
+rownames(diet_mat) <- diet_elt$tiplabel
+diet_mat_L = log(diet_mat+1)
+
+#diet_mat = decostand(diet_mat, "hellinger")
+diet_mat <- as.matrix(vegdist(diet_mat, method = "bray"))
+
+
+rownames(diet_mat) == rownames(avg_dist_mat)
+diet_mat <- diet_mat[rownames(avg_dist_mat), rownames(avg_dist_mat)]
+rownames(diet_mat) == rownames(avg_dist_mat)
+
+
+mantel_result <- vegan::mantel(
+  diet_mat,
+  micro_dist,
+  method = "spearman",
+  permutations = 9999
+)
+
+mantel_result$statistic
+mantel_result$signif
+
+rownames(diet_mat) == rownames(phy_mat1)
+
+
+mantel_result <- vegan::mantel(
+  diet_mat,
+  phy_mat1,
+#  method = "spearman",
+  permutations = 9999
+)
+
+mantel_result$statistic
+mantel_result$signif
+
+### Scatter plot ---------------------------------------------------------
+df <- data.frame(
+  phy = as.vector(as.dist(phy_mat1)),
+  micro = as.vector(as.dist(diet_mat))
+)
+
+a = ggplot(df, aes(x = phy, y = micro)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_classic() +
+  labs(
+    x = "Phylogenetic distance",
+    y = "Diet distance"
+  ) + ggtitle("not log transformed")
+
+a
+
+### try test phylogenetic signal  --------
+
+
+# --- 1. Load and prep diet matrix -----------------------------------------
+colnames(diet_elt)
+diet_cols <- grep("^Diet\\.", colnames(diet_elt), value = TRUE)
+diet_cols  # should print all 10 Diet.* names
+diet_traits = diet_elt[diet_cols]
+
+
+# --- 2. Check zero prevalence per diet category ----------------------------
+prevalence <- colSums(diet_traits > 0)
+prevalence_pct <- round(100 * prevalence / nrow(diet_traits), 1)
+data.frame(category = diet_cols, n_nonzero = prevalence, pct_nonzero = prevalence_pct)
+
+# drop categories where almost no species have a nonzero value (e.g. <10% prevalence)
+keep_cols <- diet_cols[prevalence_pct >= 10]
+diet_traits <- diet_traits[, keep_cols]
+
+# --- 3. Match to tree tip order ---------------------------------------------
+tree_exp$tip.label
+rownames(diet_traits) <- diet_elt$tiplabel
+diet_traits <- diet_traits[tree_exp$tip.label, ]
+
+# --- 4. Handle compositionality (Hellinger transform handles zeros natively) 
+diet_hell <- decostand(diet_traits, method = "hellinger")
+diet_hell <- as.matrix(diet_hell)
+tree_exp$tip.label == rownames(diet_hell)
+# --- 5. Multivariate phylogenetic signal (Kmult) ----------------------------
+physig_result <- physignal(
+  A = diet_hell,
+  phy = tree_exp,
+  iter = 9999
+)
+diet_traits <- diet_traits[tree_exp$tip.label, ]
+
+
+summary(physig_result)
+plot(physig_result)
+
+
+
+library(ggtree)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+
+# --- 1. Prep diet data in long format for stacked bars ---------------------
+diet_df <- as.data.frame(diet_traits)
+diet_df$tiplabel <- rownames(diet_df)
+
+diet_long <- diet_df %>%
+  pivot_longer(cols = -tiplabel, names_to = "DietCategory", values_to = "Proportion")
+
+# --- 2. Base tree plot -------------------------------------------------------
+p_tree <- ggtree(tree_exp) +
+  geom_tiplab(size = 3, align = TRUE, linesize = 0.3) +
+  theme_tree2() +
+  hexpand(0.5)  # adds 50% extra space on the right for labels
+p_combined <- p_tree +
+  geom_facet(
+    panel = "Diet composition",
+    data = diet_long,
+    geom = geom_col,
+    mapping = aes(x = Proportion, fill = DietCategory),
+    orientation = "y",
+    width = 0.8
+  )
+p_combined
+
+
 
 ### ---- SPLICED FROM SCRIPT 2: species_colors -----------------------------
 ### (needed for cophylo tip/link coloring below)

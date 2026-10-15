@@ -7,7 +7,7 @@ library(ggplot2)
 library(viridis)
 source("~/Library/CloudStorage/OneDrive-UniversityofArizona/helpful_r_functions.R")
 #### setwd
-setwd("/Users/gabri/Library/CloudStorage/OneDrive-UniversityofArizona/mice/Suzuki_meeting_presentation/")
+setwd("/Users/gabri/Documents/final_codes_sky_islands/data")
 
 #### read files in metadata
 metadata = readRDS("metadata_clean_1.RDS")
@@ -21,7 +21,26 @@ ASVtable = ASVtable[metadata$species != "Sorex monticolus", ] ### remove those s
 metadata = metadata[metadata$species != "Sorex monticolus",]
 unique(rownames(ASVtable) == metadata$sample_id) # OK
 
-### read ASVs in--------------
+
+diet_elt <- read.csv("/Users/gabri/Documents/final_codes_sky_islands/data/diet_elton.csv")
+# 2. Diet distance matrix
+diet_mat <- as.matrix(diet_elt[, grep("^Diet\\.", colnames(diet_elt))])
+rownames(diet_mat) <- diet_elt$tiplabel
+diet_mat <- as.matrix(vegdist(diet_mat, method = "bray"))
+
+# PCoA on diet Bray-Curtis distance matrix
+pcoa_diet <- cmdscale(diet_mat, k = 2, eig = TRUE)
+
+# Axis 1 scores per species
+diet_axis1 <- pcoa_diet$points[, 1]
+names(diet_axis1) <- rownames(diet_mat)
+diet_axis1
+unique(metadata$species)
+metadata$diet_axis1 <- diet_axis1[as.character(metadata$species)]
+metadata$diet_axis1
+
+
+
 mapping_file = readRDS("/Users/gabri/Desktop/mouse/SILVA_tree/nodes_df.RDS")
 mapping_file = mapping_file[mapping_file$is_transition == TRUE,]
 mapping_file$descendants[1]
@@ -37,13 +56,15 @@ sort(rowSums(ASVtable))
 metadata$read_number = rowSums(ASVtable)
 metadata = metadata[metadata$read_number > 10000, ] ### remove those samples from the metadata
 ASVtable = ASVtable[rowSums(ASVtable) >10000, ] ### remove those samples from the ASvtable
+ASVtable <- ASVtable[, colSums(ASVtable) > 0]      # remove all-zero ASVs
 ndvi_mod <- lm(mean_ndvi_2022_2025 ~ elevation, data = metadata)
 metadata$ndvi_resid <- residuals(ndvi_mod)
 
 ###taxtab 
-
 taxtab_fin = Taxatable[rownames(Taxatable) %in% colnames(ASVtable), ]
 
+
+## ASVtable-----
 
 ### Calculate rarefied ASVtable
 set.seed(12)
@@ -55,9 +76,11 @@ metadata$Richness.rar<-specnumber(ASVtable_rar) # Counts ASV number
 metadata$Shannon.rar<-vegan::diversity(ASVtable_rar, index="shannon") ## calculate Shannon H
 ##saveRDS(metadata,"/Users/gabri/Library/CloudStorage/OneDrive-UniversityofArizona/mice/analysis/data/metadata.RDS")
 
-m1 <- lm(Richness.rar ~ species + Mountain + elevation + ndvi_resid, data = metadata)
+m1 <- lm(Richness.rar ~ species + Mountain + elevation + ndvi_resid + diet_axis1, data = metadata)
 anova(m1)
+alias(m1)
 
+metadata$diet_axis1
 a = ggplot(metadata, aes(x = species, y = Richness.rar, color = Mountain)) +
   geom_boxplot(outlier.shape = NA) + 
   geom_point(position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8), alpha = 0.7) +
@@ -183,15 +206,14 @@ b
 
 ggarrange(a,b, common.legend = TRUE, legend = "right")
 
-### Beta diversity 
-##### Beta diversity ----------------
+## Beta diversity ----------------
 set.seed(12)
 #bac.dist<-vegdist(ASVtable_rar, method="bray") ### this calculates BC dissimilaries
 #bac.dist.sor<-vegdist(ASVtable_rar, method="bray", binary  = TRUE ) ### this calculates Sorensen dissimilaries
 #saveRDS(bac.dist,"bac.dist.RDS")
 #saveRDS(bac.dist.sor,"bac.dist_sor.RDS")
-bac.dist = readRDS("bac.dist.RDS")
-bac.dist.sor = readRDS("bac.dist_sor.RDS")
+bac.dist = readRDS("/Users/gabri/Library/CloudStorage/OneDrive-UniversityofArizona/mice/Suzuki_meeting_presentation/bac.dist.RDS")
+bac.dist.sor = readRDS("/Users/gabri/Library/CloudStorage/OneDrive-UniversityofArizona/mice/Suzuki_meeting_presentation/bac.dist_sor.RDS")
 
 set.seed(12)
 bac.nmds<-metaMDS(bac.dist, k=2, try=999)
@@ -217,16 +239,20 @@ bac_nmds <- ggplot(metadata, aes(x = Axis01, y = Axis02)) +
     legend.title = element_text(size = 8),
     legend.text = element_text(size = 7),
     legend.key.size = unit(0.4, "cm")
-  ) +
-  annotate("text",
-           x = Inf, y = Inf,
-           label = stress,
-           hjust = 1.1, vjust = 1.5,
-           size = 3)
+  ) + annotate("text",
+             x = Inf, y = Inf,
+             label = stress,
+             hjust = 1.1, vjust = 1.5,
+             size = 3) + theme(
+            legend.title = element_text(size = 8),
+            legend.text = element_text(size = 7),
+            legend.key.size = unit(0.4, "cm")
+          ) +
+  guides(color = guide_legend(label.theme = element_text(size = 7, face = "italic")))
 
 bac_nmds
 
-perm = adonis2(bac.dist~ species + Mountain + elevation +ndvi_resid  , data = metadata, by = "margin")
+perm = adonis2(bac.dist.sor~ species + Mountain + elevation +ndvi_resid +diet_axis1  , data = metadata, by = "margin")
 perm
 
 
@@ -303,3 +329,19 @@ perm
 ef <- envfit(bac.nmds, metadata["elevation"], permutations = 999)
 ef
 plot(bac.nmds); plot(ef)  
+
+
+
+
+## Taxonomy ----
+mod_tax = generate.tax.summary.modified(ASVtable_rar, taxtab_fin)
+phyla = mod_tax$tax3
+total_phyla = rowSums(phyla)
+phyla_frac = total_phyla / sum(total_phyla)
+sort(phyla_frac, decreasing = TRUE)
+
+
+family_s = mod_tax$tax6
+total_family_s = rowSums(family_s)
+family_s_frac = total_family_s / sum(total_family_s)
+sort(family_s_frac, decreasing = TRUE)

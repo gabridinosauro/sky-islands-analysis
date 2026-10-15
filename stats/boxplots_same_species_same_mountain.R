@@ -66,11 +66,11 @@ sor_df <- sor_df[upper.tri(sor_mat), ]
 any(sor_df$sample1 == sor_df$sample2)
 
 meta <- metadata %>%
-  select(sample_id, species, Mountain)
+  dplyr::select(sample_id, species, Mountain)
 
 
 meta <- metadata %>%
-  select(sample_id, species, Mountain)
+  dplyr::select(sample_id, species, Mountain)
 
 
 sor_df <- sor_df %>%
@@ -84,20 +84,39 @@ sor_df <- sor_df %>%
   ) %>%
   mutate(
     species_same  = factor(species_same,  levels = c("same_species",  "different_species"),
-                           labels = c("Same species", "Different species")),
+                           labels = c("Within species", "Among species")),
     mountain_same = factor(mountain_same, levels = c("same_mountain", "different_mountain"),
-                           labels = c("Same mountain", "Different mountain"))
+                           labels = c("Within mountain", "Between mountain"))
   )
 
-wilcox.test(as.numeric(sor_df$similarity)~ sor_df$species_same)
 
-perm_test <- oneway_test(
-  similarity ~ species_same,
-  data = sor_df,
-  distribution = approximate(B = 9999)
-)
+### Permutation test
+set.seed(12)
+nperm <- 9999
 
-perm_test
+# observed difference
+obs <- mean(sor_df$similarity[sor_df$species1 == sor_df$species2]) -
+  mean(sor_df$similarity[sor_df$species1 != sor_df$species2])
+
+perm <- numeric(nperm)
+for (i in 1:nperm) {
+  # 1. reassign species to samples
+  new_sp <- setNames(sample(metadata$species), metadata$sample_id)
+  
+  # 2. recompute species for each pair
+  sp1 <- new_sp[as.character(sor_df$sample1)]
+  sp2 <- new_sp[as.character(sor_df$sample2)]
+  
+  # 3. same or not, and the difference
+  same <- sp1 == sp2
+  perm[i] <- mean(sor_df$similarity[same]) - mean(sor_df$similarity[!same])
+}
+
+p <- (sum(abs(perm) >= abs(obs)) + 1) / (nperm + 1)
+obs; p
+
+
+
 
 summary_stats <- sor_df %>%
   group_by(species_same) %>%
@@ -109,30 +128,81 @@ summary_stats <- sor_df %>%
 
 summary_stats
 
-sor_df_sa_s = sor_df[sor_df$species_same == "Same species",]
-wilcox.test(as.numeric(sor_df_sa_s$similarity)~ sor_df_sa_s$mountain_same)
+sor_df_sa_s = sor_df[sor_df$species_same != "Within species",]
 
-perm_test <- oneway_test(
-  similarity ~ mountain_same,
-  data = sor_df_sa_s,
-  distribution = approximate(B = 9999)
-)
+# observed difference
+obs <- mean(sor_df_sa_s$similarity[sor_df_sa_s$mountain1 == sor_df_sa_s$mountain2]) -
+  mean(sor_df_sa_s$similarity[sor_df_sa_s$mountain1 != sor_df_sa_s$mountain2])
 
-perm_test
+perm <- numeric(nperm)
+for (i in 1:nperm) {
+  # 1. reassign species to samples
+  new_sp <- setNames(sample(metadata$Mountain), metadata$sample_id)
+  
+  # 2. recompute species for each pair
+  sp1 <- new_sp[as.character(sor_df_sa_s$sample1)]
+  sp2 <- new_sp[as.character(sor_df_sa_s$sample2)]
+  
+  # 3. same or not, and the difference
+  same <- sp1 == sp2
+  perm[i] <- mean(sor_df_sa_s$similarity[same]) - mean(sor_df_sa_s$similarity[!same])
+}
 
-sor_df_sa_s = sor_df[sor_df$species_same != "Same species",]
-sor_df_sa_m = sor_df[sor_df$species_same == "Same species",]
+p <- (sum(abs(perm) >= abs(obs)) + 1) / (nperm + 1)
+obs; p
 
-wilcox.test(as.numeric(sor_df_sa_s$similarity)~ sor_df_sa_s$mountain_same)
-library(coin)
 
-perm_test <- oneway_test(
-  similarity ~ mountain_same,
-  data = sor_df_sa_s,
-  distribution = approximate(B = 9999)
-)
 
-perm_test
+# observed difference
+obs <- mean(sor_df_sa_s$similarity[sor_df_sa_s$mountain1 == sor_df_sa_s$mountain2]) -
+  mean(sor_df_sa_s$similarity[sor_df_sa_s$mountain1 != sor_df_sa_s$mountain2])
+
+perm <- numeric(nperm)
+for (i in 1:nperm) {
+  # 1. reassign species to samples
+  new_sp <- setNames(sample(metadata$Mountain), metadata$sample_id)
+  
+  # 2. recompute species for each pair
+  sp1 <- new_sp[as.character(sor_df_sa_s$sample1)]
+  sp2 <- new_sp[as.character(sor_df_sa_s$sample2)]
+  
+  # 3. same or not, and the difference
+  same <- sp1 == sp2
+  perm[i] <- mean(sor_df_sa_s$similarity[same]) - mean(sor_df_sa_s$similarity[!same])
+}
+
+p <- (sum(abs(perm) >= abs(obs)) + 1) / (nperm + 1)
+obs; p
+
+
+
+
+
+
+sor_df_sa_m = sor_df[sor_df$species_same == "Within species",]
+
+
+# observed difference
+obs <- mean(sor_df_sa_m$similarity[sor_df_sa_m$mountain1 == sor_df_sa_m$mountain2]) -
+  mean(sor_df_sa_m$similarity[sor_df_sa_m$mountain1 != sor_df_sa_m$mountain2])
+
+perm <- numeric(nperm)
+for (i in 1:nperm) {
+  # 1. reassign species to samples
+  new_sp <- setNames(sample(metadata$Mountain), metadata$sample_id)
+  
+  # 2. recompute species for each pair
+  sp1 <- new_sp[as.character(sor_df_sa_m$sample1)]
+  sp2 <- new_sp[as.character(sor_df_sa_m$sample2)]
+  
+  # 3. same or not, and the difference
+  same <- sp1 == sp2
+  perm[i] <- mean(sor_df_sa_m$similarity[same]) - mean(sor_df_sa_m$similarity[!same])
+}
+
+p <- (sum(abs(perm) >= abs(obs)) + 1) / (nperm + 1)
+obs; p
+
 
 
 
@@ -142,7 +212,7 @@ perm_test
 
 a= ggplot(sor_df_sa_m, aes(x = mountain_same, y = similarity)) +
   #facet_wrap(~ species_same, strip.position = "top") +
-  geom_violin(trim = TRUE, alpha = 0.6, color = NA, fill = "gray60") +
+  #geom_violin(trim = TRUE, alpha = 0.6, color = NA, fill = "gray60") +
   geom_boxplot(width = 0.15, outlier.shape = NA, color = "gray20", fill = "white") +
   theme_classic(base_size = 11) +
   theme(
@@ -161,7 +231,7 @@ a
 
 b = ggplot(sor_df_sa_s, aes(x = mountain_same, y = similarity)) +
   #facet_wrap(~ species_same, strip.position = "top") +
-  geom_violin(trim = TRUE, alpha = 0.6, color = NA, fill = "gray60") +
+  #geom_violin(trim = TRUE, alpha = 0.6, color = NA, fill = "gray60") +
   geom_boxplot(width = 0.15, outlier.shape = NA, color = "gray20", fill = "white") +
   theme_classic(base_size = 11) +
   theme(
@@ -169,7 +239,7 @@ b = ggplot(sor_df_sa_s, aes(x = mountain_same, y = similarity)) +
     strip.text = element_text(face = "bold"),
     axis.text.x = element_text(angle = 20, hjust = 1)
   ) +
-  ylab("Fraction of Shared ASVs") + xlab(NULL) + coord_cartesian(ylim = c(0, 0.1)) 
+  ylab("Fraction of Shared ASVs") + xlab(NULL) + coord_cartesian(ylim = c(0, 0.05)) 
 
 b
 
@@ -179,7 +249,7 @@ ggarrange(a,b)
 
 
 
-#### Anaerboic -------------------------------
+#### Anaerobic -------------------------------
 Taxatable1 <- Taxatable[match(colnames(ASVtable_rar), rownames(Taxatable)), , drop = FALSE]
 
 # sanity check: all ASVs should match
@@ -233,12 +303,6 @@ sor_df$aerotellearnce = "obligate anaerobic"
 
 
 
-
-
-
-
-
-
 # example with anaerobe (repeat for others if needed)
 sor_mat <- as.matrix(sor_not)
 
@@ -278,39 +342,68 @@ species = ggplot(sor_df_species, aes(x = aerotellearnce, y = similarity)) +
 
 species
 
-perm_test <- function(df, group_var = "species_same", group_val, n_perm = 999) {
-  d <- df[df[[group_var]] == group_val, ]
-  obs <- mean(d$similarity[d$aerotellearnce == "aerotolerant"]) -
-    mean(d$similarity[d$aerotellearnce == "obligate anaerobic"])
-  perm <- replicate(n_perm, {
-    sh <- sample(d$aerotellearnce)
-    mean(d$similarity[sh == "aerotolerant"]) -
-      mean(d$similarity[sh == "obligate anaerobic"])
-  })
-  list(observed = obs, p_value = mean(abs(perm) >= abs(obs)))
-}
-library(coin)
+
 sor_df_species_same = sor_df_species[sor_df_species$species_same == "same_species",]
-perm_test <- oneway_test(
-  similarity ~ as.factor(aerotellearnce),
-  data = sor_df_species_same,
-  distribution = approximate(B = 9999)
-)
-perm_test
+
+
+### permutation tests -----------
+#### same species ---------------
+
+set.seed(12)
+nperm <- 9999
+
+# observed difference
+obs <- mean(sor_df_species_same$similarity[sor_df_species_same$aerotellearnce == "obligate anaerobic"]) -
+  mean(sor_df_species_same$similarity[sor_df_species_same$aerotellearnce != "obligate anaerobic"])
+
+obs
+perm <- numeric(nperm)
+for (i in 1:nperm) {
+  # 1. shuffle the aerotolerance labels
+  new_lab <- sample(sor_df_species_same$aerotellearnce)
+  
+  # 2. recompute the difference with the shuffled labels
+  perm[i] <- mean(sor_df_species_same$similarity[new_lab == "obligate anaerobic"]) -
+    mean(sor_df_species_same$similarity[new_lab != "obligate anaerobic"])
+}
+
+p <- (sum(abs(perm) >= abs(obs)) + 1) / (nperm + 1)
+obs; p
+
+
+
+
+
+
+
 
 
 sor_df_species_same = sor_df_species[sor_df_species$species_same == "different_species",]
-perm_test <- oneway_test(
-  similarity ~ as.factor(aerotellearnce),
-  data = sor_df_species_same,
-  distribution = approximate(B = 9999)
-)
-perm_test
 
-sor_df_species$species_same
+set.seed(12)
+nperm <- 9999
+
+# observed difference
+obs <- mean(sor_df_species_same$similarity[sor_df_species_same$aerotellearnce == "obligate anaerobic"]) -
+  mean(sor_df_species_same$similarity[sor_df_species_same$aerotellearnce != "obligate anaerobic"])
+
+obs
+perm <- numeric(nperm)
+for (i in 1:nperm) {
+  # 1. shuffle the aerotolerance labels
+  new_lab <- sample(sor_df_species_same$aerotellearnce)
+  
+  # 2. recompute the difference with the shuffled labels
+  perm[i] <- mean(sor_df_species_same$similarity[new_lab == "obligate anaerobic"]) -
+    mean(sor_df_species_same$similarity[new_lab != "obligate anaerobic"])
+}
+
+p <- (sum(abs(perm) >= abs(obs)) + 1) / (nperm + 1)
+obs; p
 
 
-##### MOuntain
+
+## Mountain -----------
 sor_mat <- as.matrix(sor_anaerobe)
 
 sor_df <- as.data.frame(as.table(sor_mat))
@@ -339,7 +432,6 @@ sor_df$aerotellearnce = "obligate anaerobic"
 
 
 # example with anaerobe (repeat for others if needed)
-
 sor_mat <- as.matrix(sor_not)
 
 sor_df1 <- as.data.frame(as.table(sor_mat))
@@ -378,23 +470,53 @@ Mountain = ggplot(sor_df, aes(x = aerotellearnce, y = similarity)) +
 Mountain
 
 sor_df_mountain_same = sor_df[sor_df$Mountain_same == "same_Mountain",]
-perm_test <- oneway_test(
-  similarity ~ as.factor(aerotellearnce),
-  data = sor_df_mountain_same,
-  distribution = approximate(B = 9999)
-)
-perm_test
+
+set.seed(12)
+nperm <- 9999
+
+# observed difference
+obs <- mean(sor_df_mountain_same$similarity[sor_df_mountain_same$aerotellearnce == "obligate anaerobic"]) -
+  mean(sor_df_mountain_same$similarity[sor_df_mountain_same$aerotellearnce != "obligate anaerobic"])
+
+obs
+
+perm <- numeric(nperm)
+for (i in 1:nperm) {
+  # 1. shuffle the aerotolerance labels
+  new_lab <- sample(sor_df_mountain_same$aerotellearnce)
+  
+  # 2. recompute the difference with the shuffled labels
+  perm[i] <- mean(sor_df_mountain_same$similarity[new_lab == "obligate anaerobic"]) -
+    mean(sor_df_mountain_same$similarity[new_lab != "obligate anaerobic"])
+}
+
+p <- (sum(abs(perm) >= abs(obs)) + 1) / (nperm + 1)
+obs; p
+
+
+
 
 
 sor_df_mountain_same = sor_df[sor_df$Mountain_same == "different_Mountain",]
-perm_test <- oneway_test(
-  similarity ~ as.factor(aerotellearnce),
-  data = sor_df_species_same,
-  distribution = approximate(B = 9999)
-)
-perm_test
+obs <- mean(sor_df_mountain_same$similarity[sor_df_mountain_same$aerotellearnce == "obligate anaerobic"]) -
+  mean(sor_df_mountain_same$similarity[sor_df_mountain_same$aerotellearnce != "obligate anaerobic"])
 
-sor_df_species$species_same
+obs
+
+perm <- numeric(nperm)
+for (i in 1:nperm) {
+  # 1. shuffle the aerotolerance labels
+  new_lab <- sample(sor_df_mountain_same$aerotellearnce)
+  
+  # 2. recompute the difference with the shuffled labels
+  perm[i] <- mean(sor_df_mountain_same$similarity[new_lab == "obligate anaerobic"]) -
+    mean(sor_df_mountain_same$similarity[new_lab != "obligate anaerobic"])
+}
+
+p <- (sum(abs(perm) >= abs(obs)) + 1) / (nperm + 1)
+obs; p
+
+
 
 
 
@@ -406,10 +528,10 @@ library(ggpubr)
 plot_aero <- function(df, facet_var) {
   if ("species_same" %in% names(df))
     df$species_same  = factor(df$species_same,  levels = c("same_species", "different_species"),
-                              labels = c("Same species", "Different species"))
+                              labels = c("Within species", "Among species"))
   if ("Mountain_same" %in% names(df))
     df$Mountain_same = factor(df$Mountain_same, levels = c("same_Mountain", "different_Mountain"),
-                              labels = c("Same mountain", "Different mountain"))
+                              labels = c("Within mountain", "Between mountain"))
   
   ggplot(df, aes(x = aerotellearnce, y = similarity, fill = aerotellearnce)) +
     geom_boxplot(width = 0.30, outlier.shape = NA, color = "gray20") +
